@@ -10,6 +10,7 @@ class KeyboardAgent(Agent):
         # Add member variables to your class here
         self.total_reward = 0
 
+
     def initialise(self, grid):
         """ Called at the beginning of an episode. Use it to construct
         the initial state.

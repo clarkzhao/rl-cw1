@@ -2,7 +2,7 @@ import cv2
 from enduro.agent import Agent
 from enduro.action import Action
 from enduro.state import EnvironmentState
-
+import numpy as np
 
 class RandomAgent(Agent):
     def __init__(self):
@@ -31,6 +31,18 @@ class RandomAgent(Agent):
         # i.e. Action.LEFT, Action.RIGHT, Action.ACCELERATE or Action.BREAK
         # Do not use plain integers between 0 - 3 as it will not work
         # self.total_reward += self.move(action)
+        act = np.random.randint(4, size=1)[0]
+        action = Action.NOOP
+        if act == 0:
+            action = Action.ACCELERATE
+        elif act == 1:
+            action = Action.LEFT
+        elif act == 2:
+            action = Action.RIGHT
+        else:
+            action = Action.BREAK
+        print action
+        self.total_reward += self.move(action)
 
     def sense(self, grid):
         """ Constructs the next state from sensory signals.
@@ -51,6 +63,10 @@ class RandomAgent(Agent):
         """ Called at the end of each timestep for reporting/debugging purposes.
         """
         print "{0}/{1}: {2}".format(episode, iteration, self.total_reward)
+        results = []
+        results.append([episode, iteration, self.total_reward])
+        with open('total_reward_results.csv','a') as f_handle:
+            np.savetxt(f_handle, results, fmt = '%i', delimiter=",")
         # Show the game frame only if not learning
         if not learn:
             cv2.imshow("Enduro", self._image)
@@ -58,5 +74,8 @@ class RandomAgent(Agent):
 
 if __name__ == "__main__":
     a = RandomAgent()
-    a.run(True, episodes=2, draw=True)
+    # a.act()
+    with open('total_reward_results.csv', 'w'):
+        pass
+    a.run(True, episodes=100, draw=True)
     print 'Total reward: ' + str(a.total_reward)

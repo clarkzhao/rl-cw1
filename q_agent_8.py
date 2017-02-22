@@ -10,9 +10,8 @@ class QAgent(Agent):
         # Add member variables to your class here
         self.total_reward = 0
         self.current_reward = 0
-        self.horizon = 3
-        self.current_state_grid = np.zeros([self.horizon,10],'int8')
-        self.next_state_grid = np.zeros([self.horizon,10],'int8')
+        self.current_state_grid = np.zeros([8,10],'int8')
+        self.next_state_grid = np.zeros([8,10],'int8')
         self.actions = [Action.ACCELERATE,
                         Action.LEFT,
                         Action.RIGHT,
@@ -20,10 +19,10 @@ class QAgent(Agent):
         self.current_action = Action.NOOP
         self.q_vals = {}
         # probability for exploration
-        self.EPSILON = 0.1
+        self.EPSILON = 0.05
         # step size
         self.ALPHA = 0.2
-        # gamma for Q-Learning
+        # gamma for Q-Learning and Expected Sarsa
         self.GAMMA = 0.9
 
     def initialise(self, grid):
@@ -34,7 +33,8 @@ class QAgent(Agent):
         self.total_reward = 0
         # cv2.imshow("Enduro", self._image)
         # cv2.imshow("Environment Grid", EnvironmentState.draw(grid))
-        self.current_state_grid = grid[:self.horizon]
+        self.current_state_grid = grid[:8]
+
 
     def stateToString(self, state):
         return ''.join(str(x) for x in state.reshape(-1).tolist())
@@ -98,18 +98,16 @@ class QAgent(Agent):
         """
         # Visualise the environment grid
         cv2.imshow("Environment Grid", EnvironmentState.draw(grid))
-        self.next_state_grid = grid
+        self.next_state_grid = grid[:8]
 
     def learn(self):
         """ Performs the learning procudre. It is called after act() and
         sense() so you have access to the latest tuple (s, s', a, r).
         """
         current_q = self.getQvals(self.current_state_grid,self.current_action)
-        # print ('The previous q value is {0}').format(current_q)
         new_q = current_q + self.ALPHA * (self.current_reward +
             self.GAMMA * self.maxQvals(self.next_state_grid) - current_q)
         current_key = (self.stateToString(self.current_state_grid),self.current_action)
-        # print ('The new q value is {0}').format(new_q)
         self.q_vals[current_key] = new_q
         self.current_state_grid = self.next_state_grid
 
@@ -120,7 +118,7 @@ class QAgent(Agent):
         # Show the game frame only if not learning
         results = []
         results.append([episode, iteration, self.total_reward])
-        with open('q_result_' +str(self.horizon)+'.csv','a') as f_handle:
+        with open('q_result_8.csv','a') as f_handle:
             np.savetxt(f_handle, results, fmt = '%i', delimiter=",")
         if not learn:
             cv2.imshow("Enduro", self._image)
@@ -128,7 +126,7 @@ class QAgent(Agent):
 
 if __name__ == "__main__":
     a = QAgent()
-    with open('q_result_' + str(a.horizon) + '.csv', 'w'):
+    with open('q_result_8.csv', 'w'):
         pass
     a.run(True, episodes=100, draw=True)
     print 'Total reward: ' + str(a.total_reward)

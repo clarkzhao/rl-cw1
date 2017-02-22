@@ -8,6 +8,7 @@ class EnvironmentState:
     def draw(grid, sz=40):
         [h, w] = grid.shape
         image = np.ones((h * sz, w * sz, 3), np.uint8)
+        #Generate the rectangle for agent and opponent
         for i in range(h):
             for j in range(w):
                 if grid[i][j] == 2:
@@ -22,6 +23,7 @@ class EnvironmentState:
                                   ((j + 1) * sz, (i + 1) * sz),
                                   (0x43, 0x04, 0xAE),
                                   -1)
+        #Generate the while line for the grid
         for i in range(h):
             cv2.line(image,
                      (0, i * sz),
@@ -45,6 +47,7 @@ class StateExtractor:
     def run(self, draw=False, scale=1.0):
         image = self.__getScreenImage()
         # Use an image copy for processing
+        #Remove the road line of the grid
         img = self.__removeOffroadRegions(np.copy(image))
         self._road_grid = self.__detectRoadGrid(img)
         self._cars = self.__detectCars(

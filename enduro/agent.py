@@ -30,18 +30,15 @@ class Agent(object):
             # Observe the environment to set the initial state
             (grid, self._image) = self._extractor.run(draw=draw, scale=4.0)
             self.initialise(grid)
-
             num_frames = self._ale.getFrameNumber()
 
             # Each episode lasts 6500 frames
             while self._ale.getFrameNumber() - num_frames < 6500:
                 # Take an action
                 self.act()
-
                 # Update the environment grid
                 (grid, self._image) = self._extractor.run(draw=draw, scale=4.0)
                 self.sense(grid)
-
                 # Perform learning if required
                 if learn:
                     self.learn()
