@@ -41,7 +41,7 @@ def plot_multi_res(A,B):
     ax.set_ylabel('Avearage Reward')
     ax.set_xlabel('Epoch')
     ax.legend(loc=0)
-    fig.savefig('result_2q.pdf')
+    fig.savefig('result_3_6.pdf')
 
 
 def getReward(file_name):
@@ -64,12 +64,12 @@ def getReward(file_name):
     for i in range(100):
         print i
         result = results[index[i]:index[i+1]]
-        reward, _ = get_mean_variance_simple(result)
+        reward, _ = get_Mean_Variance(result)
         total_rewards.append(reward)
     return total_rewards
 
-total_rewards1 = getReward('q_result_4.csv')
-total_rewards2 = getReward('q_result_3.csv')
+total_rewards1 = getReward('q3_6_1_result.csv')
+total_rewards2 = getReward('q3_6_result.csv')
 
 # mean = np.mean(total_rewards)
 # variance = np.var(total_rewards)

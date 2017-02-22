@@ -98,7 +98,7 @@ class QAgent(Agent):
         """
         # Visualise the environment grid
         cv2.imshow("Environment Grid", EnvironmentState.draw(grid))
-        self.next_state_grid = grid
+        self.next_state_grid = grid[:self.horizon]
 
     def learn(self):
         """ Performs the learning procudre. It is called after act() and
@@ -111,7 +111,7 @@ class QAgent(Agent):
         current_key = (self.stateToString(self.current_state_grid),self.current_action)
         # print ('The new q value is {0}').format(new_q)
         self.q_vals[current_key] = new_q
-        self.current_state_grid = self.next_state_grid
+        self.next_state_grid = self.next_state_grid
 
     def callback(self, learn, episode, iteration):
         """ Called at the end of each timestep for reporting/debugging purposes.
