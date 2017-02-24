@@ -12,18 +12,20 @@ class QAgent(Agent):
         self.current_reward = 0
         self.current_state_grid = np.zeros([6,])
         self.next_state_grid = np.zeros([6,])
-        self.actions = [Action.ACCELERATE,
-                        Action.LEFT,
-                        Action.RIGHT,
-                        Action.BREAK]
-        self.current_action = Action.NOOP
-        self.q_vals = {}
+        self.actions = {0:Action.ACCELERATE,
+                        1:Action.LEFT,
+                        2:Action.RIGHT,
+                        3:Action.BREAK}
+        self.current_action = 0
         # probability for exploration
         self.EPSILON = 0.05
         # step size
-        self.ALPHA = 0.1
+        self.ALPHA = 0.01
         # gamma for Q-Learning
-        self.GAMMA = 0.9
+        self.GAMMA = 1
+        # State: {sensor 0, 90,180, deviation}
+        self.q_table = np.zeros([2,2,2,10,4])
+        # self.action_counter = [0,0,0,0]
 
     def getState(self, grid):
         agent_pt = np.argmax(grid)
@@ -32,17 +34,28 @@ class QAgent(Agent):
             if grid[0,i] == 1:
                 sensor_0 -= i
                 break
+
+        if sensor_0 > 2:
+            sensor_0 = 1
+        else:
+            sensor_0 = 0
+
         sensor_180 = 9-agent_pt
         for i in range(9-agent_pt):
             if grid[0,i+agent_pt] ==1:
                 sensor_180 = i
                 break
+        if sensor_180 > 2:
+            sensor_180 = 1
+        else:
+            sensor_180 = 0
+
         sensor_90 = 10
         sensor_90_l = 10
         sensor_90_r = 10
 
         if agent_pt <= 1:
-            sensor_90_l = 0
+            sensor_90_l = 10
         else:
             for i in range(10):
                 if grid[i, agent_pt-1] == 1:
@@ -50,7 +63,7 @@ class QAgent(Agent):
                     break
 
         if agent_pt >= 8:
-            sensor_90_r = 0
+            sensor_90_r = 10
         else:
             for i in range(10):
                 if grid[i, agent_pt+1] == 1:
@@ -62,9 +75,24 @@ class QAgent(Agent):
                 sensor_90 = i
                 break
 
-        ob_45 = np.array([])
+        if sensor_90 > 5:
+            sensor_90 = 1
+        else:
+            sensor_90 = 0
+
+        if sensor_90_l > 5:
+            sensor_90_l = 1
+        else:
+            sensor_90_l = 0
+
+        if sensor_90_r > 5:
+            sensor_90_r = 1
+        else:
+            sensor_90_r =0
+
+        sensor_90_all = sensor_90 * sensor_90_l * sensor_90_r
         deviation = 4-agent_pt
-        return np.array([sensor_0,sensor_90_l, sensor_90, sensor_90_r, sensor_180, deviation])
+        return np.array([sensor_0, sensor_90_all, sensor_180, deviation])
 
     def initialise(self, grid):
         """ Called at the beginning of an episode. Use it to construct
@@ -76,28 +104,25 @@ class QAgent(Agent):
         # cv2.imshow("Environment Grid", EnvironmentState.draw(grid))
         # self.current_state_grid = grid[:self.horizon,1:1+self.vertical]
         self.current_state_grid = self.getState(grid)
-
-    def stateToString(self, state):
-        return ''.join(str(x) for x in state.reshape(-1).tolist())
-
+        # with open('action_counter.csv','a') as f_act:
+            # np.savetxt(f_act, [self.action_counter], fmt = '%i', delimiter=",")
+        # self.action_counter = [0,0,0,0]
     def getQvals(self, state, action):
-        key = (self.stateToString(state), action)
-        if key in self.q_vals:
-            return self.q_vals[key]
-        else:
-            self.q_vals[key] = 0.0
-            return 0.0
+        return self.q_table[state[0],state[1],state[2],state[3],action]
 
-    def argMaxQvals(self, state):
-        # Get the action that argmax given current state grid
-        possible_Qvals = {}
-        for action in self.actions:
-            possible_Qvals[action] = self.getQvals(state, action)
-        maximals = []
-        for key, value in possible_Qvals.items():
-            if value == possible_Qvals[max(possible_Qvals, key=possible_Qvals.get)]:
-                maximals.append(key)
-        return maximals[np.random.choice(len(maximals))]
+    def argmax(self, unique=True):
+        state_value = self.q_table[self.current_state_grid[0],
+                                self.current_state_grid[1],
+                                self.current_state_grid[2],
+                                self.current_state_grid[3],:]
+        maxValue = np.max(state_value)
+        candidates = np.where(np.asarray(state_value) == maxValue)[0]
+        if unique:
+            return np.random.choice(candidates)
+        return list(candidates)
+
+    def doAction(self):
+        return self.actions[self.current_action]
 
     def maxQvals(self, state):
         # Get the max Q-values from all possible actions
@@ -123,13 +148,14 @@ class QAgent(Agent):
 
         #exploration
         if np.random.binomial(1, self.EPSILON) == 1:
-            self.current_action = np.random.choice(self.actions)
+            self.current_action = np.random.randint(4, size=1)[0]
         #exploition
         else:
-            self.current_action = self.argMaxQvals(self.current_state_grid)
+            self.current_action = self.argmax()
         #Take action and get reward for current action and state
-        self.current_reward = self.move(self.current_action)
+        self.current_reward = self.move(self.doAction())
         self.total_reward += self.current_reward
+        # self.action_counter[self.current_action] +=1
 
     def sense(self, grid):
         """ Constructs the next state from sensory signals.
@@ -149,9 +175,12 @@ class QAgent(Agent):
         # print ('The previous q value is {0}').format(current_q)
         new_q = current_q + self.ALPHA * (self.current_reward +
             self.GAMMA * self.maxQvals(self.next_state_grid) - current_q)
-        current_key = (self.stateToString(self.current_state_grid),self.current_action)
         # print ('The new q value is {0}').format(new_q)
-        self.q_vals[current_key] = new_q
+        self.q_table[self.current_state_grid[0],
+                    self.current_state_grid[1],
+                    self.current_state_grid[2],
+                    self.current_state_grid[3],
+                    self.current_action] = new_q
         self.current_state_grid = self.next_state_grid
     def callback(self, learn, episode, iteration):
         """ Called at the end of each timestep for reporting/debugging purposes.
@@ -160,7 +189,7 @@ class QAgent(Agent):
         # Show the game frame only if not learning
         results = []
         results.append([episode, iteration, self.total_reward])
-        with open('q36_0050109.csv','a') as f_handle:
+        with open('q_table_less_0050011.csv','a') as f_handle:
             np.savetxt(f_handle, results, fmt = '%i', delimiter=",")
         if not learn:
             cv2.imshow("Enduro", self._image)
@@ -168,7 +197,7 @@ class QAgent(Agent):
 
 if __name__ == "__main__":
     a = QAgent()
-    with open('q36_0050109.csv', 'w'):
+    with open('q_table_less_0050011.csv', 'w'):
         pass
     a.run(True, episodes=100, draw=True)
     print 'Total reward: ' + str(a.total_reward)

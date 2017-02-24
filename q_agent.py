@@ -10,7 +10,7 @@ class QAgent(Agent):
         # Add member variables to your class here
         self.total_reward = 0
         self.current_reward = 0
-        self.horizon = 8
+        self.horizon = 6
         self.current_state_grid = np.zeros([self.horizon,8],'int8')
         self.next_state_grid = np.zeros([self.horizon,8],'int8')
         self.actions = [Action.ACCELERATE,
@@ -25,7 +25,6 @@ class QAgent(Agent):
         self.ALPHA = 0.1
         # gamma for Q-Learning
         self.GAMMA = 0.9
-	self.action_counter = [0,0,0,0]
 
     def initialise(self, grid):
         """ Called at the beginning of an episode. Use it to construct
@@ -36,10 +35,8 @@ class QAgent(Agent):
         # cv2.imshow("Enduro", self._image)
         # cv2.imshow("Environment Grid", EnvironmentState.draw(grid))
         self.current_state_grid = grid[:self.horizon,1:9]
-	print self.action_counter
-        with open('action34' +str(self.horizon)+'_0050109.csv','a') as f_act:
-            np.savetxt(f_act, [self.action_counter], fmt = '%i', delimiter=",")
-	self.action_counter = [0,0,0,0]
+
+
     def stateToString(self, state):
         return ''.join(str(x) for x in state.reshape(-1).tolist())
 
@@ -94,9 +91,8 @@ class QAgent(Agent):
         #Take action and get reward for current action and state
         self.current_reward = self.move(self.current_action)
         self.total_reward += self.current_reward
-	
-	act_index = self.actions.index(self.current_action)
-	self.action_counter[act_index] +=1
+
+
 
     def sense(self, grid):
         """ Constructs the next state from sensory signals.
@@ -138,7 +134,6 @@ if __name__ == "__main__":
     a = QAgent()
     with open('q34' +str(a.horizon)+'_0050109.csv', 'w'):
         pass
-    with open('action34' +str(a.horizon)+'_0050109.csv','w') as f_act:
-	pass
     a.run(True, episodes=100, draw=True)
+    u
     print 'Total reward: ' + str(a.total_reward)
